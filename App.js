@@ -1,21 +1,16 @@
-import { Center, OrbitControls, useAnimations, useGLTF } from '@react-three/drei';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Center, Environment, useAnimations, useGLTF } from '@react-three/drei/native';
 import Checkbox from 'expo-checkbox';
 import { THREE } from 'expo-three';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { Button, StyleSheet, Text, View } from 'react-native';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Canvas, useFrame, useThree } from '@react-three/fiber/native';
 
-function Model({ index, onAnimationNames, loop, freezeTpose, onBlenderCamera }) {
+
+function Model({ index, onAnimationNames, loop, freezeTpose, onBlenderCamera, setIsPlaying }) {
   const { scene, animations, cameras } = useGLTF(require('./assets/model5.glb'));
-  const { actions, names } = useAnimations(animations, scene);
+  const { actions, names, mixer } = useAnimations(animations, scene);
   const { set, size } = useThree();
-
-  console.log({ cameras }, cameras.length)
-
-
-  // console.log('cameras:', obj.cameras)
-  // console.log('first camera:', obj.cameras[0])
-  // scene.traverse((object) => console.log(object.isCamera))
 
   useEffect(() => {
     console.log('useEffect 1')
@@ -41,12 +36,26 @@ function Model({ index, onAnimationNames, loop, freezeTpose, onBlenderCamera }) 
 
     if (!names[index]) return;
 
-    console.log(THREE.AnimationClip.findByName(animations, 'Camera'));
+    setIsPlaying(true);
 
     const current = actions[names[index]];
     if (current) {
       current.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
-      current.play();
+      current.clampWhenFinished = !loop;
+      current.reset().play();
+    }
+
+    const handleFinished = (e) => {
+      if (e.action === current) {
+        console.log('finished');
+        setIsPlaying(false);
+      }
+    };
+
+    mixer.addEventListener('finished', handleFinished);
+
+    return () => {
+      mixer.removeEventListener('finished', handleFinished);
     }
 
   }, [scene, animations, index, loop]);
@@ -62,8 +71,6 @@ function Model({ index, onAnimationNames, loop, freezeTpose, onBlenderCamera }) 
 
   }, [freezeTpose]);
 
-  // scene.add(obj.cameras[0])
-  console.log(scene)
 
   return (
     <Center>
@@ -72,12 +79,79 @@ function Model({ index, onAnimationNames, loop, freezeTpose, onBlenderCamera }) 
   )
 }
 
+function OrbitCamera({ orbit }) {
+  const { camera } = useThree();
+  useFrame(() => {
+    const { theta, phi, radius } = orbit.current;
+    camera.position.x = radius * Math.sin(theta) * Math.cos(phi)
+    camera.position.y = radius * Math.sin(phi)
+    camera.position.z = radius * Math.cos(theta) * Math.cos(phi)
+    camera.lookAt(0, 0, 0)
+  });
+
+  return null;
+}
+
 export default function App() {
   const [animationNames, setAnimationNames] = useState([]);
   const [index, setIndex] = useState(-1);
   const [loop, setLoop] = useState(true);
   const [freezeTpose, setFreezeTpose] = useState(false);
   const [blenderCamera, setBlenderCamera] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const orbit = useRef({
+    theta: 0,
+    phi: 0,
+    radius: 5
+  });
+
+  const start = useRef({ theta: 0, phi: 0 });
+  const startRadius = useRef(orbit.current.radius)
+
+  const rotateGesture = Gesture.Pan()
+    .minPointers(1)
+    .maxPointers(1)
+    .runOnJS(true).onBegin(() => {
+      console.log('pan begin');
+      start.current.theta = orbit.current.theta;
+      start.current.phi = orbit.current.phi;
+    }).onUpdate((e) => {
+      console.log('pan update');
+      // horizontal swipe → rotate around Y
+      orbit.current.theta =
+        start.current.theta + e.translationX * 0.005
+
+      // vertical swipe → tilt up/down
+      orbit.current.phi =
+        start.current.phi + e.translationY * 0.005
+
+      // clamp vertical rotation
+      orbit.current.phi = Math.max(
+        -Math.PI / 2 + 0.1,
+        Math.min(Math.PI / 2 - 0.1, orbit.current.phi)
+      )
+    });
+
+  const pinchGesture = Gesture.Pinch()
+    .runOnJS(true)
+    .onBegin(() => {
+      console.log('pinch onBegin')
+      startRadius.current = orbit.current.radius;
+    })
+    .onUpdate((e) => {
+      console.log('pinch onUpdate')
+      const nextRadius = startRadius.current / e.scale
+
+      // clamp zoom limits
+      orbit.current.radius = Math.max(
+        2,     // minimum zoom
+        Math.min(10, nextRadius) // maximum zoom
+      )
+    });
+
+  const gesture = Gesture.Simultaneous(rotateGesture, pinchGesture);
+
 
   //  EXGL: gl.pixelStorei() doesn't support this parameter yet!
   function handlePixelStorei(state) {
@@ -98,8 +172,6 @@ export default function App() {
 
   function onBlenderCameraHandler(camera) {
     setBlenderCamera(camera);
-    console.log('camera:', camera?.object)
-
   }
 
   function handleOnPrevious() {
@@ -119,15 +191,37 @@ export default function App() {
   return (
     <>
       <View style={styles.container}>
-        <Canvas onCreated={handlePixelStorei}>
-          <ambientLight intensity={1} />
-          <directionalLight position={[2, 2, 2]} />
-          <Suspense fallback={null}>
-            <Model onAnimationNames={onAnimationNamesHandler} index={index} loop={loop} freezeTpose={freezeTpose} onBlenderCamera={onBlenderCameraHandler} />
-          </Suspense>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <Canvas style={{ flex: 1 }} camera={{ position: [0, 0, 5], fov: 50 }} onCreated={handlePixelStorei}>
+            <ambientLight intensity={0.5} />
+            <directionalLight position={[2, 2, 2]} />
+            <Suspense fallback={null}>
+              <OrbitCamera orbit={orbit} />
+              <Model
+                onAnimationNames={onAnimationNamesHandler}
+                index={index}
+                loop={loop}
+                freezeTpose={freezeTpose}
+                onBlenderCamera={onBlenderCameraHandler}
+                setIsPlaying={setIsPlaying}
+              />
+            </Suspense>
 
-          <OrbitControls />
-        </Canvas>
+            <Environment preset="warehouse" background />
+
+            {/* <OrbitControls enablePan={false} enableZoom={false} enableRotate={false} /> */}
+          </Canvas>
+
+          <GestureDetector gesture={gesture}>
+            <View
+              style={
+                StyleSheet.absoluteFillObject
+              }
+            />
+          </GestureDetector>
+        </GestureHandlerRootView>
+
+
         <Text style={[styles.text, { top: 30, left: 30 }]}>
           Animations: {animationNames.join(', ')}
         </Text>
@@ -149,6 +243,8 @@ export default function App() {
           <Button title='Next' onPress={handleOnNext} />
           <Checkbox value={loop} onValueChange={setLoop} color={loop ? '#4630EB' : undefined} />
           <Text>Loop</Text>
+          <Button title='Test' disabled={isPlaying} onPress={() => console.log('hello!')} />
+
         </View>
       </View >
     </>
@@ -169,7 +265,7 @@ const styles = StyleSheet.create({
     left: 30,
     flexDirection: 'row',
     justifyContent: 'space-around',
-    width: '30%'
+    width: '40%'
   },
 });
 
