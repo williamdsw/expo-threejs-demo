@@ -8,7 +8,9 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber/native';
 
 
 function Model({ index, onAnimationNames, loop, freezeTpose, onBlenderCamera, setIsPlaying }) {
-  const { scene, animations, cameras } = useGLTF(require('./assets/model5.glb'));
+  // const { scene, animations, cameras } = useGLTF(require('./assets/models/model.glb'));
+  // const { scene, animations, cameras } = useGLTF(require('./assets/models/ANI_Bengala.glb'));
+  const { scene, animations, cameras } = useGLTF(require('./assets/models/teste.glb'));
   const { actions, names, mixer } = useAnimations(animations, scene);
   const { set, size } = useThree();
 
@@ -16,6 +18,7 @@ function Model({ index, onAnimationNames, loop, freezeTpose, onBlenderCamera, se
     console.log('useEffect 1')
     if (cameras && cameras.length > 0) {
       const gblCamera = cameras[0];
+      console.log({ gblCamera }, gblCamera?.metadata, gblCamera?.object)
       gblCamera.aspect = size.width / size.height;
       gblCamera.updateProjectionMatrix();
       set({ camera: gblCamera });
@@ -92,10 +95,12 @@ function OrbitCamera({ orbit }) {
   return null;
 }
 
+const cameraProps = { position: [0, 0, 5], fov: 50 }
+
 export default function App() {
   const [animationNames, setAnimationNames] = useState([]);
   const [index, setIndex] = useState(-1);
-  const [loop, setLoop] = useState(true);
+  const [loop, setLoop] = useState(false);
   const [freezeTpose, setFreezeTpose] = useState(false);
   const [blenderCamera, setBlenderCamera] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -110,6 +115,7 @@ export default function App() {
   const startRadius = useRef(orbit.current.radius)
 
   const rotateGesture = Gesture.Pan()
+    .enabled(!isPlaying)
     .minPointers(1)
     .maxPointers(1)
     .runOnJS(true).onBegin(() => {
@@ -134,6 +140,7 @@ export default function App() {
     });
 
   const pinchGesture = Gesture.Pinch()
+    .enabled(!isPlaying)
     .runOnJS(true)
     .onBegin(() => {
       console.log('pinch onBegin')
@@ -192,11 +199,16 @@ export default function App() {
     <>
       <View style={styles.container}>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <Canvas style={{ flex: 1 }} camera={{ position: [0, 0, 5], fov: 50 }} onCreated={handlePixelStorei}>
+          <Canvas style={{ flex: 1 }} onCreated={handlePixelStorei}>
             <ambientLight intensity={0.5} />
             <directionalLight position={[2, 2, 2]} />
             <Suspense fallback={null}>
-              <OrbitCamera orbit={orbit} />
+              {/* <OrbitCamera orbit={orbit} /> */}
+              {/* {
+                !isPlaying == true && (
+                  <OrbitCamera orbit={orbit} />
+                )
+              } */}
               <Model
                 onAnimationNames={onAnimationNamesHandler}
                 index={index}
@@ -212,39 +224,65 @@ export default function App() {
             {/* <OrbitControls enablePan={false} enableZoom={false} enableRotate={false} /> */}
           </Canvas>
 
-          <GestureDetector gesture={gesture}>
-            <View
-              style={
-                StyleSheet.absoluteFillObject
-              }
-            />
-          </GestureDetector>
+          {
+            !isPlaying == true && (
+              <GestureDetector gesture={gesture}>
+                <View
+                  style={
+                    StyleSheet.absoluteFillObject
+                  }
+                />
+              </GestureDetector>
+            )
+          }
+
+
+
+
         </GestureHandlerRootView>
 
+        <View style={styles.infoContainer}>
+          <Text>
+            Animações/Ações:
+            {animationNames.length > 0 ? animationNames.join(', ') : 'Nenhuma animação encontrada'}
+          </Text>
+          <Text>
+            Animação/Ação atual: {index >= 0 ? animationNames[index] : 'T-pose'}
+          </Text>
+          {/* <Text>
+            Index atual: {index}
+          </Text>
+          <Text>
+            Está tocando animação: {isPlaying ? 'Sim' : 'Não'}
+          </Text>
+          <Text>
+            Animação/Ação em Loop: {loop ? 'Sim' : 'Não'}
+          </Text>
+          <Text>
+            T-Pose? {freezeTpose ? 'Sim' : 'Não'}
+          </Text>
+          <Text>
+            Modelagem tem camera? {blenderCamera ? 'Sim' : 'Não'}
+          </Text> */}
+        </View>
 
-        <Text style={[styles.text, { top: 30, left: 30 }]}>
-          Animations: {animationNames.join(', ')}
-        </Text>
-        <Text style={[styles.text, { top: 50, left: 30 }]}>
-          Current Animation: {index >= 0 ? animationNames[index] : 'T-pose'}
-        </Text>
-        <Text style={[styles.text, { top: 70, left: 30 }]}>
-          Loop: {loop ? 'true' : 'false'}
-        </Text>
-        <Text style={[styles.text, { top: 90, left: 30 }]}>
-          Freeze T-Pose: {freezeTpose ? 'true' : 'false'}
-        </Text>
-        <Text style={[styles.text, { top: 110, left: 30 }]}>
-          Model has camera: {blenderCamera ? 'true' : 'false'}
-        </Text>
         <View style={styles.buttonContainer}>
-          <Button title='Freeze T-pose' onPress={() => setFreezeTpose(true)} />
-          <Button title='Previous' onPress={handleOnPrevious} />
-          <Button title='Next' onPress={handleOnNext} />
-          <Checkbox value={loop} onValueChange={setLoop} color={loop ? '#4630EB' : undefined} />
-          <Text>Loop</Text>
-          <Button title='Test' disabled={isPlaying} onPress={() => console.log('hello!')} />
-
+          {/* <Button
+            title='Congelar T-pose'
+            onPress={() => setFreezeTpose(true)}
+            disabled /> */}
+          <Button
+            title='Animação Anterior'
+            disabled={isPlaying || index <= 0}
+            onPress={handleOnPrevious}
+          />
+          <Button
+            title='Próxima Animação'
+            disabled={isPlaying || index == animationNames.length - 1}
+            onPress={handleOnNext}
+          />
+          {/* <Checkbox value={loop} onValueChange={setLoop} color={loop ? '#4630EB' : undefined} />
+          <Text>Loop</Text> */}
         </View>
       </View >
     </>
@@ -256,8 +294,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  text: {
+  infoContainer: {
     position: 'absolute',
+    top: 30,
+    left: 30,
+    backgroundColor: 'white',
+    flexDirection: 'column',
+    justifyContent: 'space-around',
+    padding: 10,
   },
   buttonContainer: {
     position: 'absolute',
@@ -265,13 +309,6 @@ const styles = StyleSheet.create({
     left: 30,
     flexDirection: 'row',
     justifyContent: 'space-around',
-    width: '40%'
+    width: '30%',
   },
 });
-
-const cameraProps = {
-  position: [0, 0, 3],
-  fov: 60,
-  near: 0.01,
-  far: 1000,
-};
