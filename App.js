@@ -10,7 +10,11 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber/native';
 function Model({ index, onAnimationNames, loop, freezeTpose, onBlenderCamera, setIsPlaying }) {
   // const { scene, animations, cameras } = useGLTF(require('./assets/models/model.glb'));
   // const { scene, animations, cameras } = useGLTF(require('./assets/models/ANI_Bengala.glb'));
-  const { scene, animations, cameras } = useGLTF(require('./assets/models/teste.glb'));
+  // const { scene, animations, cameras } = useGLTF(require('./assets/models/teste.glb'));
+  // const { scene, animations, cameras } = useGLTF(require('./assets/models/SapoActionsNovo (1).glb'));
+  // const { scene, animations, cameras } = useGLTF(require('./assets/models/SapoTake001 5.glb'));
+  // const { scene, animations, cameras } = useGLTF(require('./assets/models/Sapo.glb'));
+  const { scene, animations, cameras } = useGLTF(require('./assets/models/Sapo_alpha.glb'));
   const { actions, names, mixer } = useAnimations(animations, scene);
   const { set, size } = useThree();
 
@@ -18,7 +22,6 @@ function Model({ index, onAnimationNames, loop, freezeTpose, onBlenderCamera, se
     console.log('useEffect 1')
     if (cameras && cameras.length > 0) {
       const gblCamera = cameras[0];
-      console.log({ gblCamera }, gblCamera?.metadata, gblCamera?.object)
       gblCamera.aspect = size.width / size.height;
       gblCamera.updateProjectionMatrix();
       set({ camera: gblCamera });
@@ -26,7 +29,33 @@ function Model({ index, onAnimationNames, loop, freezeTpose, onBlenderCamera, se
     }
   }, [cameras, size, set]);
 
+  // useEffect(() => {
+  //   scene.traverse(obj => {
+  //     if (obj.isMesh && obj.material) {
+  //       const material = obj.material;
+  //       if (material.transparent || material.alphaMap || material.opacity < 1) {
+  //         console.log('aqui')
+  //         material.transparent = true;
+  //         material.depthWrite = false;
+  //         material.needsUpdate = true;
+  //       }
+  //     }
+  //   })
+  // }, [scene])
+
   useEffect(() => {
+    print(names)
+    // names.sort()
+    // names.sort((a, b) => {
+    //   // Extract the leading number from string 'a'
+    //   const numA = parseInt(a.match(/^\d+/)[0], 10);
+    //   // Extract the leading number from string 'b'
+    //   const numB = parseInt(b.match(/^\d+/)[0], 10);
+    //   console.log(numA, numB);
+
+    //   // Sort numerically by the extracted number
+    //   return numA - numB;
+    // });
     onAnimationNames(names);
   }, []);
 
@@ -42,7 +71,43 @@ function Model({ index, onAnimationNames, loop, freezeTpose, onBlenderCamera, se
     setIsPlaying(true);
 
     const current = actions[names[index]];
+    // const current = actions["2_passo1"]
     if (current) {
+      // console.log("Duration seconds: " + current.getClip().duration);
+      // console.log("Duration mili: " + current.getClip().duration * 1000);
+
+      // const fps = 24;
+      // const duration = clip.duration;
+      // console.log({ duration })
+      // const totalFrames = Math.round(duration * fps);
+      // clip.tracks.forEach(track => {
+      //   console.log(track.times.length);
+      // })
+
+      // const expectedDuration = totalFrames / fps
+      // current.timeScale = duration / expectedDuration
+      // console.log(current.timeScale)
+
+
+      // console.log("Duration:", clip.duration)
+      // console.log("First keyframe time:", clip.tracks[0].times[0])
+
+      // Ajusta questão as animações não iniciarem no segundo 1
+      // const clip = current.getClip();
+      // clip.tracks.forEach(track => {
+      //   const offset = track.times[0]
+      //   for (let i = 0; i < track.times.length; i++) {
+      //     track.times[i] -= offset
+      //   }
+      // })
+
+      // clip.duration -= clip.tracks[0].times[0]
+
+
+
+      // console.log(`Duration:`, duration)
+      // console.log(`Total frames / blender FPS:`, duration / fps)
+      // console.log(`Total frames at ${fps}fps:`, totalFrames)
       current.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
       current.clampWhenFinished = !loop;
       current.reset().play();
@@ -119,11 +184,11 @@ export default function App() {
     .minPointers(1)
     .maxPointers(1)
     .runOnJS(true).onBegin(() => {
-      console.log('pan begin');
+      // console.log('pan begin');
       start.current.theta = orbit.current.theta;
       start.current.phi = orbit.current.phi;
     }).onUpdate((e) => {
-      console.log('pan update');
+      // console.log('pan update');
       // horizontal swipe → rotate around Y
       orbit.current.theta =
         start.current.theta + e.translationX * 0.005
@@ -143,11 +208,11 @@ export default function App() {
     .enabled(!isPlaying)
     .runOnJS(true)
     .onBegin(() => {
-      console.log('pinch onBegin')
+      // console.log('pinch onBegin')
       startRadius.current = orbit.current.radius;
     })
     .onUpdate((e) => {
-      console.log('pinch onUpdate')
+      // console.log('pinch onUpdate')
       const nextRadius = startRadius.current / e.scale
 
       // clamp zoom limits
@@ -195,20 +260,31 @@ export default function App() {
     setIndex(currentIndex);
   }
 
+  // return (
+  //   <Canvas gl={{ antialias: false }} shadows>
+  //     <ambientLight />
+  //     <directionalLight castShadow />
+  //     <mesh>
+  //       <boxGeometry />
+  //       <meshStandardMaterial color="red" />
+  //     </mesh>
+  //   </Canvas>
+  // )
+
   return (
     <>
       <View style={styles.container}>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <Canvas style={{ flex: 1 }} onCreated={handlePixelStorei}>
+          <Canvas gl={{ antialias: false }} style={{ flex: 1 }} onCreated={handlePixelStorei}>
             <ambientLight intensity={0.5} />
-            <directionalLight position={[2, 2, 2]} />
+            <directionalLight position={[5, 5, 5]} intensity={1.5} />
             <Suspense fallback={null}>
-              {/* <OrbitCamera orbit={orbit} /> */}
-              {/* {
-                !isPlaying == true && (
-                  <OrbitCamera orbit={orbit} />
-                )
-              } */}
+              <OrbitCamera orbit={orbit} />
+              {
+                // !isPlaying && (
+                //   <OrbitCamera orbit={orbit} />
+                // )
+              }
               <Model
                 onAnimationNames={onAnimationNamesHandler}
                 index={index}
@@ -219,7 +295,7 @@ export default function App() {
               />
             </Suspense>
 
-            <Environment preset="warehouse" background />
+            {/* <Environment preset="warehouse" background /> */}
 
             {/* <OrbitControls enablePan={false} enableZoom={false} enableRotate={false} /> */}
           </Canvas>
