@@ -5,6 +5,8 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { Button, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Canvas, useFrame, useThree } from '@react-three/fiber/native';
+// import { Asset } from 'expo-asset';
+// import { HDRLoader } from 'three/examples/jsm/Addons.js';
 
 
 function Model({ index, onAnimationNames, loop, freezeTpose, onBlenderCamera, setIsPlaying }) {
@@ -14,7 +16,9 @@ function Model({ index, onAnimationNames, loop, freezeTpose, onBlenderCamera, se
   // const { scene, animations, cameras } = useGLTF(require('./assets/models/SapoActionsNovo (1).glb'));
   // const { scene, animations, cameras } = useGLTF(require('./assets/models/SapoTake001 5.glb'));
   // const { scene, animations, cameras } = useGLTF(require('./assets/models/Sapo.glb'));
-  const { scene, animations, cameras } = useGLTF(require('./assets/models/Sapo_alpha.glb'));
+  // const { scene, animations, cameras } = useGLTF(require('./assets/models/Sapo_alpha.glb'));
+  // const { scene, animations, cameras } = useGLTF(require('./assets/models/Sapo 1.glb'));
+  const { scene, animations, cameras } = useGLTF(require('./assets/models/CubeLight2.glb'));
   const { actions, names, mixer } = useAnimations(animations, scene);
   const { set, size } = useThree();
 
@@ -24,24 +28,51 @@ function Model({ index, onAnimationNames, loop, freezeTpose, onBlenderCamera, se
       const gblCamera = cameras[0];
       gblCamera.aspect = size.width / size.height;
       gblCamera.updateProjectionMatrix();
-      set({ camera: gblCamera });
+      // set({ camera: gblCamera });
       onBlenderCamera(gblCamera);
     }
   }, [cameras, size, set]);
 
-  // useEffect(() => {
-  //   scene.traverse(obj => {
-  //     if (obj.isMesh && obj.material) {
-  //       const material = obj.material;
-  //       if (material.transparent || material.alphaMap || material.opacity < 1) {
-  //         console.log('aqui')
-  //         material.transparent = true;
-  //         material.depthWrite = false;
-  //         material.needsUpdate = true;
-  //       }
-  //     }
-  //   })
-  // }, [scene])
+  useEffect(() => {
+    console.log('useEffect 2')
+    scene.traverse(obj => {
+      if (obj.isMesh) {
+        obj.castShadow = true;
+        obj.receiveShadow = true;
+      }
+
+      if (obj.isLight) {
+        console.log(obj)
+        // position={[5, 10, 5]}
+        obj.intensity *= 10;
+        // obj.intensity = 10;
+        obj.castShadow = true;
+        // console.log(obj.position)
+        // obj.position = {
+        //   x: 5,
+        //   y: 10,
+        //   z: 5
+        // }
+        const helper = new THREE.PointLightHelper(obj);
+        scene.add(helper)
+      }
+    })
+
+    // arquivos HDR não funcionam no expo
+
+    // async function loadHDR() {
+    //   console.log('{ loadHDR }')
+    //   const asset = Asset.fromModule(require('./assets/white_home_studio_2k.hdr'));
+    //   await asset.downloadAsync();
+    //   const loader = new HDRLoader();
+    //   loader.load(asset.localUri || asset.uri, (texture) => {
+    //     texture.mapping = THREE.EquirectangularReflectionMapping;
+    //     scene.enviroment = texture;
+    //   });
+    // }
+
+    // loadHDR();
+  }, [scene])
 
   useEffect(() => {
     print(names)
@@ -60,7 +91,7 @@ function Model({ index, onAnimationNames, loop, freezeTpose, onBlenderCamera, se
   }, []);
 
   useEffect(() => {
-    console.log('useEffect 2')
+    console.log('useEffect 3')
 
     Object.values(actions).forEach(action => {
       action.stop();
@@ -129,7 +160,7 @@ function Model({ index, onAnimationNames, loop, freezeTpose, onBlenderCamera, se
   }, [scene, animations, index, loop]);
 
   useEffect(() => {
-    console.log('useEffect 3')
+    console.log('useEffect 4')
 
     if (freezeTpose) {
       Object.values(actions).forEach(action => {
@@ -141,9 +172,9 @@ function Model({ index, onAnimationNames, loop, freezeTpose, onBlenderCamera, se
 
 
   return (
-    <Center>
-      <primitive object={scene} scale={1} />
-    </Center>
+    // <Center>
+    <primitive object={scene} scale={1} />
+    // </Center>
   )
 }
 
@@ -225,6 +256,14 @@ export default function App() {
   const gesture = Gesture.Simultaneous(rotateGesture, pinchGesture);
 
 
+  function canvasOnCreated(state) {
+    console.log('canvasOnCreated')
+    let gl = state.gl;
+    gl.shadowMap.enabled = true;
+    gl.shadowMap.type = THREE.BasicShadowMap;
+    handlePixelStorei(state);
+  }
+
   //  EXGL: gl.pixelStorei() doesn't support this parameter yet!
   function handlePixelStorei(state) {
     let _gl = state.gl.getContext();
@@ -275,9 +314,20 @@ export default function App() {
     <>
       <View style={styles.container}>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <Canvas gl={{ antialias: false }} style={{ flex: 1 }} onCreated={handlePixelStorei}>
+          <Canvas
+            shadows
+            gl={{ antialias: false }}
+            style={{ flex: 1, backgroundColor: '#000' }}
+            onCreated={canvasOnCreated}
+          >
+            {/* <Environment files={require('./assets/hdrs/white_home_studio_2k.hdr')} /> */}
+            {/* <Environment files="white_home_studio_2k.hdr" /> */}
             <ambientLight intensity={0.5} />
-            <directionalLight position={[5, 5, 5]} intensity={1.5} />
+            {/* <directionalLight
+              position={[5, 10, 5]}
+              intensity={1}
+              castShadow
+            /> */}
             <Suspense fallback={null}>
               <OrbitCamera orbit={orbit} />
               {
@@ -293,14 +343,36 @@ export default function App() {
                 onBlenderCamera={onBlenderCameraHandler}
                 setIsPlaying={setIsPlaying}
               />
+              <mesh
+                rotation={[-Math.PI / 2, 0, 0]}
+                position={[0, -4, 0]}
+                receiveShadow>
+                <planeGeometry args={[100, 100]} />
+                <meshStandardMaterial
+                  color="#eaeaea"
+                  roughness={1}
+                  metalness={0} />
+              </mesh>
             </Suspense>
 
-            {/* <Environment preset="warehouse" background /> */}
+            <Environment preset="warehouse" background environmentIntensity={0.3} />
+            {/* <Environment
+              files={require('./assets/white_home_studio_2k.hdr')}
+              background={false}
+            /> */}
+
 
             {/* <OrbitControls enablePan={false} enableZoom={false} enableRotate={false} /> */}
           </Canvas>
 
-          {
+          <GestureDetector gesture={gesture}>
+            <View
+              style={
+                StyleSheet.absoluteFillObject
+              }
+            />
+          </GestureDetector>
+          {/* {
             !isPlaying == true && (
               <GestureDetector gesture={gesture}>
                 <View
@@ -310,7 +382,7 @@ export default function App() {
                 />
               </GestureDetector>
             )
-          }
+          } */}
 
 
 
@@ -318,13 +390,13 @@ export default function App() {
         </GestureHandlerRootView>
 
         <View style={styles.infoContainer}>
-          <Text>
+          {/* <Text>
             Animações/Ações:
             {animationNames.length > 0 ? animationNames.join(', ') : 'Nenhuma animação encontrada'}
           </Text>
           <Text>
             Animação/Ação atual: {index >= 0 ? animationNames[index] : 'T-pose'}
-          </Text>
+          </Text> */}
           {/* <Text>
             Index atual: {index}
           </Text>
