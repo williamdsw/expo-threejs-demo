@@ -1,195 +1,19 @@
-import { Center, Environment, useAnimations, useGLTF } from '@react-three/drei/native';
+import { Center, Environment, useAnimations, useGLTF, useHelper } from '@react-three/drei/native';
 import Checkbox from 'expo-checkbox';
 import { THREE } from 'expo-three';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Button, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Canvas, useFrame, useThree } from '@react-three/fiber/native';
-// import { Asset } from 'expo-asset';
-// import { HDRLoader } from 'three/examples/jsm/Addons.js';
+import { DirectionalLightHelper, PointLightHelper } from 'three';
+import Light from './components/Light';
+import Model from './components/Model';
+import InfoContainer from './components/InfoContainer';
+import ButtonContainer from './components/ButtonContainer';
+import { canvasOnCreated, glProps } from './helpers/CanvasHelper';
+import OrbitCamera from './components/OrbitCamera';
+import createGestures from './helpers/GestureHelper';
 
-
-function Model({ index, onAnimationNames, loop, freezeTpose, onBlenderCamera, setIsPlaying }) {
-  // const { scene, animations, cameras } = useGLTF(require('./assets/models/model.glb'));
-  // const { scene, animations, cameras } = useGLTF(require('./assets/models/ANI_Bengala.glb'));
-  // const { scene, animations, cameras } = useGLTF(require('./assets/models/teste.glb'));
-  // const { scene, animations, cameras } = useGLTF(require('./assets/models/SapoActionsNovo (1).glb'));
-  // const { scene, animations, cameras } = useGLTF(require('./assets/models/SapoTake001 5.glb'));
-  // const { scene, animations, cameras } = useGLTF(require('./assets/models/Sapo.glb'));
-  // const { scene, animations, cameras } = useGLTF(require('./assets/models/Sapo_alpha.glb'));
-  // const { scene, animations, cameras } = useGLTF(require('./assets/models/Sapo 1.glb'));
-  const { scene, animations, cameras } = useGLTF(require('./assets/models/CubeLight2.glb'));
-  const { actions, names, mixer } = useAnimations(animations, scene);
-  const { set, size } = useThree();
-
-  useEffect(() => {
-    console.log('useEffect 1')
-    if (cameras && cameras.length > 0) {
-      const gblCamera = cameras[0];
-      gblCamera.aspect = size.width / size.height;
-      gblCamera.updateProjectionMatrix();
-      // set({ camera: gblCamera });
-      onBlenderCamera(gblCamera);
-    }
-  }, [cameras, size, set]);
-
-  useEffect(() => {
-    console.log('useEffect 2')
-    scene.traverse(obj => {
-      if (obj.isMesh) {
-        obj.castShadow = true;
-        obj.receiveShadow = true;
-      }
-
-      if (obj.isLight) {
-        console.log(obj)
-        // position={[5, 10, 5]}
-        obj.intensity *= 10;
-        // obj.intensity = 10;
-        obj.castShadow = true;
-        // console.log(obj.position)
-        // obj.position = {
-        //   x: 5,
-        //   y: 10,
-        //   z: 5
-        // }
-        const helper = new THREE.PointLightHelper(obj);
-        scene.add(helper)
-      }
-    })
-
-    // arquivos HDR não funcionam no expo
-
-    // async function loadHDR() {
-    //   console.log('{ loadHDR }')
-    //   const asset = Asset.fromModule(require('./assets/white_home_studio_2k.hdr'));
-    //   await asset.downloadAsync();
-    //   const loader = new HDRLoader();
-    //   loader.load(asset.localUri || asset.uri, (texture) => {
-    //     texture.mapping = THREE.EquirectangularReflectionMapping;
-    //     scene.enviroment = texture;
-    //   });
-    // }
-
-    // loadHDR();
-  }, [scene])
-
-  useEffect(() => {
-    print(names)
-    // names.sort()
-    // names.sort((a, b) => {
-    //   // Extract the leading number from string 'a'
-    //   const numA = parseInt(a.match(/^\d+/)[0], 10);
-    //   // Extract the leading number from string 'b'
-    //   const numB = parseInt(b.match(/^\d+/)[0], 10);
-    //   console.log(numA, numB);
-
-    //   // Sort numerically by the extracted number
-    //   return numA - numB;
-    // });
-    onAnimationNames(names);
-  }, []);
-
-  useEffect(() => {
-    console.log('useEffect 3')
-
-    Object.values(actions).forEach(action => {
-      action.stop();
-    })
-
-    if (!names[index]) return;
-
-    setIsPlaying(true);
-
-    const current = actions[names[index]];
-    // const current = actions["2_passo1"]
-    if (current) {
-      // console.log("Duration seconds: " + current.getClip().duration);
-      // console.log("Duration mili: " + current.getClip().duration * 1000);
-
-      // const fps = 24;
-      // const duration = clip.duration;
-      // console.log({ duration })
-      // const totalFrames = Math.round(duration * fps);
-      // clip.tracks.forEach(track => {
-      //   console.log(track.times.length);
-      // })
-
-      // const expectedDuration = totalFrames / fps
-      // current.timeScale = duration / expectedDuration
-      // console.log(current.timeScale)
-
-
-      // console.log("Duration:", clip.duration)
-      // console.log("First keyframe time:", clip.tracks[0].times[0])
-
-      // Ajusta questão as animações não iniciarem no segundo 1
-      // const clip = current.getClip();
-      // clip.tracks.forEach(track => {
-      //   const offset = track.times[0]
-      //   for (let i = 0; i < track.times.length; i++) {
-      //     track.times[i] -= offset
-      //   }
-      // })
-
-      // clip.duration -= clip.tracks[0].times[0]
-
-
-
-      // console.log(`Duration:`, duration)
-      // console.log(`Total frames / blender FPS:`, duration / fps)
-      // console.log(`Total frames at ${fps}fps:`, totalFrames)
-      current.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
-      current.clampWhenFinished = !loop;
-      current.reset().play();
-    }
-
-    const handleFinished = (e) => {
-      if (e.action === current) {
-        console.log('finished');
-        setIsPlaying(false);
-      }
-    };
-
-    mixer.addEventListener('finished', handleFinished);
-
-    return () => {
-      mixer.removeEventListener('finished', handleFinished);
-    }
-
-  }, [scene, animations, index, loop]);
-
-  useEffect(() => {
-    console.log('useEffect 4')
-
-    if (freezeTpose) {
-      Object.values(actions).forEach(action => {
-        action.stop();
-      })
-    }
-
-  }, [freezeTpose]);
-
-
-  return (
-    // <Center>
-    <primitive object={scene} scale={1} />
-    // </Center>
-  )
-}
-
-function OrbitCamera({ orbit }) {
-  const { camera } = useThree();
-  useFrame(() => {
-    const { theta, phi, radius } = orbit.current;
-    camera.position.x = radius * Math.sin(theta) * Math.cos(phi)
-    camera.position.y = radius * Math.sin(phi)
-    camera.position.z = radius * Math.cos(theta) * Math.cos(phi)
-    camera.lookAt(0, 0, 0)
-  });
-
-  return null;
-}
 
 const cameraProps = { position: [0, 0, 5], fov: 50 }
 
@@ -200,85 +24,30 @@ export default function App() {
   const [freezeTpose, setFreezeTpose] = useState(false);
   const [blenderCamera, setBlenderCamera] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  const [currentFPS, setCurrentFPS] = useState(0);
 
-  const orbit = useRef({
-    theta: 0,
-    phi: 0,
-    radius: 5
-  });
-
-  const start = useRef({ theta: 0, phi: 0 });
-  const startRadius = useRef(orbit.current.radius)
-
-  const rotateGesture = Gesture.Pan()
-    .enabled(!isPlaying)
-    .minPointers(1)
-    .maxPointers(1)
-    .runOnJS(true).onBegin(() => {
-      // console.log('pan begin');
-      start.current.theta = orbit.current.theta;
-      start.current.phi = orbit.current.phi;
-    }).onUpdate((e) => {
-      // console.log('pan update');
-      // horizontal swipe → rotate around Y
-      orbit.current.theta =
-        start.current.theta + e.translationX * 0.005
-
-      // vertical swipe → tilt up/down
-      orbit.current.phi =
-        start.current.phi + e.translationY * 0.005
-
-      // clamp vertical rotation
-      orbit.current.phi = Math.max(
-        -Math.PI / 2 + 0.1,
-        Math.min(Math.PI / 2 - 0.1, orbit.current.phi)
-      )
-    });
-
-  const pinchGesture = Gesture.Pinch()
-    .enabled(!isPlaying)
-    .runOnJS(true)
-    .onBegin(() => {
-      // console.log('pinch onBegin')
-      startRadius.current = orbit.current.radius;
-    })
-    .onUpdate((e) => {
-      // console.log('pinch onUpdate')
-      const nextRadius = startRadius.current / e.scale
-
-      // clamp zoom limits
-      orbit.current.radius = Math.max(
-        2,     // minimum zoom
-        Math.min(10, nextRadius) // maximum zoom
-      )
-    });
-
-  const gesture = Gesture.Simultaneous(rotateGesture, pinchGesture);
-
-
-  function canvasOnCreated(state) {
-    console.log('canvasOnCreated')
-    let gl = state.gl;
-    gl.shadowMap.enabled = true;
-    gl.shadowMap.type = THREE.BasicShadowMap;
-    handlePixelStorei(state);
-  }
-
-  //  EXGL: gl.pixelStorei() doesn't support this parameter yet!
-  function handlePixelStorei(state) {
-    let _gl = state.gl.getContext();
-    const pixelStorei = _gl.pixelStorei.bind(_gl);
-    _gl.pixelStorei = function (...args) {
-      const [parameter] = args;
-      switch (parameter) {
-        case _gl.UNPACK_FLIP_Y_WEBGL:
-          return pixelStorei(...args);
-      }
-    }
-  }
+  // '../assets/models/model.glb' - 
+  // '../assets/models/ANI_Bengala.glb' - 
+  // '../assets/models/teste.glb' - 
+  // '../assets/models/SapoActionsNovo (1).glb' - 
+  // '../assets/models/SapoTake0012.glb' - 
+  // '../assets/models/Sapo.glb' - 
+  // '../assets/models/Sapo_alpha.glb' - 
+  // '../assets/models/Sapo 1.glb' - 
+  // '../assets/models/CubeLight3.glb' - 
+  // '../assets/models/TesteLuz 2.glb' - 
+  const modelPath = '../assets/models/SapoTake0012.glb';
 
   function onAnimationNamesHandler(names) {
     setAnimationNames(names);
+    if (names.length > 0) {
+      setIndex(0)
+    }
+  }
+
+  function onToggleInfoHandler() {
+    setShowInfo(!showInfo);
   }
 
   function onBlenderCameraHandler(camera) {
@@ -299,6 +68,64 @@ export default function App() {
     setIndex(currentIndex);
   }
 
+  const orbit = useRef({
+    theta: 0,
+    phi: 0,
+    radius: 5
+  });
+
+  const start = useRef({ theta: 0, phi: 0 });
+  const startRadius = useRef(orbit.current.radius)
+
+  const myGesture = createGestures(orbit, start, startRadius, isPlaying);
+
+
+
+  // const rotateGesture = Gesture.Pan()
+  //   .enabled(!isPlaying)
+  //   .minPointers(1)
+  //   .maxPointers(1)
+  //   .runOnJS(true).onBegin(() => {
+  //     console.log('pan begin');
+  //     start.current.theta = orbit.current.theta;
+  //     start.current.phi = orbit.current.phi;
+  //   }).onUpdate((e) => {
+  //     console.log('pan update');
+  //     // horizontal swipe → rotate around Y
+  //     orbit.current.theta =
+  //       start.current.theta + e.translationX * 0.005
+
+  //     // vertical swipe → tilt up/down
+  //     orbit.current.phi =
+  //       start.current.phi + e.translationY * 0.005
+
+  //     // clamp vertical rotation
+  //     orbit.current.phi = Math.max(
+  //       -Math.PI / 2 + 0.1,
+  //       Math.min(Math.PI / 2 - 0.1, orbit.current.phi)
+  //     )
+  //   });
+
+  // const pinchGesture = Gesture.Pinch()
+  //   .enabled(!isPlaying)
+  //   .runOnJS(true)
+  //   .onBegin(() => {
+  //     console.log('pinch onBegin')
+  //     startRadius.current = orbit.current.radius;
+  //   })
+  //   .onUpdate((e) => {
+  //     console.log('pinch onUpdate')
+  //     const nextRadius = startRadius.current / e.scale
+
+  //     // clamp zoom limits
+  //     orbit.current.radius = Math.max(
+  //       2,     // minimum zoom
+  //       Math.min(10, nextRadius) // maximum zoom
+  //     )
+  //   });
+
+  // const gesture = Gesture.Simultaneous(rotateGesture, pinchGesture);
+
   // return (
   //   <Canvas gl={{ antialias: false }} shadows>
   //     <ambientLight />
@@ -316,18 +143,68 @@ export default function App() {
         <GestureHandlerRootView style={{ flex: 1 }}>
           <Canvas
             shadows
-            gl={{ antialias: false }}
-            style={{ flex: 1, backgroundColor: '#000' }}
+            gl={glProps}
+            // style={{ flex: 1, backgroundColor: '#000' }}
+            style={{ flex: 1 }}
             onCreated={canvasOnCreated}
           >
-            {/* <Environment files={require('./assets/hdrs/white_home_studio_2k.hdr')} /> */}
-            {/* <Environment files="white_home_studio_2k.hdr" /> */}
-            <ambientLight intensity={0.5} />
+            {/* <Environment preset='city' /> */}
+            <Environment
+              files={['white_home_studio_2k.hdr']}
+              path='/'
+
+            />
+            {/* <Environment files={require('./assets/white_home_studio_2k.hdr')} /> */}
+            {/* <Environment files="./assets/white_home_studio_2k.hdr" /> */}
             {/* <directionalLight
               position={[5, 10, 5]}
               intensity={1}
               castShadow
             /> */}
+
+            {/* <ambientLight intensity={0.75} /> */}
+            {/* <Light
+              name="Area Left"
+              position={[-239, 83, 239]}
+              rotation={[-1.5, -4.37, -3.14]}
+              scale={[10, 10, 10]} // escala é apenas visual
+              intensity={556558}
+              castShadow />
+            <Light
+              name="Area Left.001"
+              position={[239, 83, -239]}
+              rotation={[-1.5, -4.37, -3.14]}
+              scale={[10, 10, 10]}
+              intensity={556558}
+              castShadow />
+            <Light
+              name="Area Right"
+              position={[255, 88, 255]}
+              rotation={[-0.43, 1.19, -0.79]}
+              scale={[10, 10, 10]}
+              intensity={556558}
+              castShadow />
+            <Light
+              name="Area Right.001"
+              position={[0, 317, 0]}
+              rotation={[-1.71, -0.27, -0.02]}
+              scale={[10, 10, 10]}
+              intensity={27}
+              castShadow /> */}
+
+            {/* <spotLight
+              position={[0, 2, 0]}
+              intensity={10}
+              color={"white"}
+              castShadow
+            /> */}
+
+            {/* <directionalLight
+              position={[0, 2, 0]}
+              intensity={1}
+              color="white"
+              castShadow /> */}
+
             <Suspense fallback={null}>
               <OrbitCamera orbit={orbit} />
               {
@@ -335,27 +212,29 @@ export default function App() {
                 //   <OrbitCamera orbit={orbit} />
                 // )
               }
-              <Model
+              {/* <Model
+                modelPath={modelPath}
                 onAnimationNames={onAnimationNamesHandler}
                 index={index}
                 loop={loop}
                 freezeTpose={freezeTpose}
                 onBlenderCamera={onBlenderCameraHandler}
                 setIsPlaying={setIsPlaying}
-              />
-              <mesh
+                setCurrentFPS={setCurrentFPS}
+              /> */}
+              {/* <mesh
                 rotation={[-Math.PI / 2, 0, 0]}
-                position={[0, -4, 0]}
+                position={[0, -1, 0]}
                 receiveShadow>
-                <planeGeometry args={[100, 100]} />
+                <planeGeometry args={[10, 10]} />
                 <meshStandardMaterial
                   color="#eaeaea"
                   roughness={1}
                   metalness={0} />
-              </mesh>
+              </mesh> */}
             </Suspense>
 
-            <Environment preset="warehouse" background environmentIntensity={0.3} />
+            {/* <Environment preset="warehouse" background environmentIntensity={0.3} /> */}
             {/* <Environment
               files={require('./assets/white_home_studio_2k.hdr')}
               background={false}
@@ -365,7 +244,7 @@ export default function App() {
             {/* <OrbitControls enablePan={false} enableZoom={false} enableRotate={false} /> */}
           </Canvas>
 
-          <GestureDetector gesture={gesture}>
+          <GestureDetector gesture={myGesture}>
             <View
               style={
                 StyleSheet.absoluteFillObject
@@ -384,54 +263,30 @@ export default function App() {
             )
           } */}
 
-
-
-
         </GestureHandlerRootView>
 
-        <View style={styles.infoContainer}>
-          {/* <Text>
-            Animações/Ações:
-            {animationNames.length > 0 ? animationNames.join(', ') : 'Nenhuma animação encontrada'}
-          </Text>
-          <Text>
-            Animação/Ação atual: {index >= 0 ? animationNames[index] : 'T-pose'}
-          </Text> */}
-          {/* <Text>
-            Index atual: {index}
-          </Text>
-          <Text>
-            Está tocando animação: {isPlaying ? 'Sim' : 'Não'}
-          </Text>
-          <Text>
-            Animação/Ação em Loop: {loop ? 'Sim' : 'Não'}
-          </Text>
-          <Text>
-            T-Pose? {freezeTpose ? 'Sim' : 'Não'}
-          </Text>
-          <Text>
-            Modelagem tem camera? {blenderCamera ? 'Sim' : 'Não'}
-          </Text> */}
-        </View>
+        <InfoContainer
+          animationNames={animationNames}
+          blenderCamera={blenderCamera}
+          freezeTpose={freezeTpose}
+          index={index}
+          isPlaying={isPlaying}
+          loop={loop}
+          showInfo={showInfo}
+          currentFPS={currentFPS}
+        />
 
-        <View style={styles.buttonContainer}>
-          {/* <Button
-            title='Congelar T-pose'
-            onPress={() => setFreezeTpose(true)}
-            disabled /> */}
-          <Button
-            title='Animação Anterior'
-            disabled={isPlaying || index <= 0}
-            onPress={handleOnPrevious}
-          />
-          <Button
-            title='Próxima Animação'
-            disabled={isPlaying || index == animationNames.length - 1}
-            onPress={handleOnNext}
-          />
-          {/* <Checkbox value={loop} onValueChange={setLoop} color={loop ? '#4630EB' : undefined} />
-          <Text>Loop</Text> */}
-        </View>
+        <ButtonContainer
+          index={index}
+          isPlaying={isPlaying}
+          handleOnNext={handleOnNext}
+          handleOnPrevious={handleOnPrevious}
+          loop={loop}
+          setFreezeTpose={setFreezeTpose}
+          setLoop={setLoop}
+          animationNames={animationNames}
+          toggleInfo={onToggleInfoHandler}
+        />
       </View >
     </>
   );
