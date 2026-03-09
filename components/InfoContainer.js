@@ -1,11 +1,21 @@
 import { StyleSheet, Text, View } from "react-native";
 
-export default function InfoContainer({ animationNames, index, isPlaying, loop, freezeTpose, blenderCamera, showInfo, currentFPS }) {
+export default function InfoContainer({
+  animationNames,
+  index,
+  isPlaying,
+  loop,
+  freezeTpose,
+  blenderCamera,
+  showInfo,
+  currentFPS,
+  environmentIntensity,
+}) {
   let content;
   if (showInfo) {
     content = (
       <View style={styles.infoContainer}>
-        <Text>
+        {/* <Text>
           Animações/Ações:
           {animationNames.length > 0 ? animationNames.join(', ') : 'Nenhuma animação encontrada'}
         </Text>
@@ -29,29 +39,24 @@ export default function InfoContainer({ animationNames, index, isPlaying, loop, 
         </Text>
         <Text>
           Modelagem tem camera? {blenderCamera ? 'Sim' : 'Não'}
-        </Text>
-        <Text>
-          FPS: {currentFPS}
-        </Text>
+        </Text> */}
+        <Text>FPS: {currentFPS}</Text>
+        <Text>Intensidade do ambiente/HDRI: {environmentIntensity}</Text>
       </View>
-    )
+    );
   }
 
-  return (
-    <>
-      {content}
-    </>
-  )
+  return <>{content}</>;
 }
 
 const styles = StyleSheet.create({
   infoContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: 30,
     left: 30,
-    backgroundColor: 'lightgray',
-    flexDirection: 'column',
-    justifyContent: 'space-around',
+    backgroundColor: "lightgray",
+    flexDirection: "column",
+    justifyContent: "space-around",
     padding: 10,
   },
 });

@@ -5,7 +5,9 @@ import { useEffect } from 'react';
 export default function Model({ modelPath, index, onAnimationNames, loop, freezeTpose, onBlenderCamera, setIsPlaying, setCurrentFPS }) {
   console.log({ modelPath })
   // const { scene, animations, cameras } = useGLTF(require('../assets/models/SapoTake0012.glb'));
-  const { scene, animations, cameras } = useGLTF(require('../assets/models/testeHDRI.glb'));
+  // const { scene, animations, cameras } = useGLTF(require('../assets/models/testeHDRI.glb'));
+  // const { scene, animations, cameras } = useGLTF(require('../assets/models/TesteMaterialNovo.glb'));
+  const { scene, animations, cameras } = useGLTF(require('../assets/models/SapoTake001 3.glb'));
   const { actions, names, mixer } = useAnimations(animations, scene);
   const { set, size } = useThree();
 
@@ -24,7 +26,7 @@ export default function Model({ modelPath, index, onAnimationNames, loop, freeze
   })
 
   useEffect(() => {
-    console.log('useEffect 1')
+    // console.log('useEffect 1', { cameras })
     if (cameras && cameras.length > 0) {
       const gblCamera = cameras[0];
       gblCamera.aspect = size.width / size.height;
@@ -35,8 +37,8 @@ export default function Model({ modelPath, index, onAnimationNames, loop, freeze
       // gblCamera.fov = 75;
       // gblCamera.zoom = 1
 
-      // set({ camera: gblCamera });
-      // onBlenderCamera(gblCamera);
+      set({ camera: gblCamera });
+      onBlenderCamera(gblCamera);
     }
   }, [cameras, size, set]);
 
@@ -45,7 +47,7 @@ export default function Model({ modelPath, index, onAnimationNames, loop, freeze
     scene.traverse(obj => {
       if (obj.isMesh) {
         obj.castShadow = true;
-        obj.receiveShadow = true;
+        // obj.receiveShadow = true;
       }
 
       if (obj.isLight) {
@@ -160,8 +162,8 @@ export default function Model({ modelPath, index, onAnimationNames, loop, freeze
 
 
   return (
-    <Center>
-      <primitive object={scene} scale={1} />
-    </Center>
+    // <Center>
+    <primitive object={scene} scale={0.01} />
+    // </Center>
   )
 }
