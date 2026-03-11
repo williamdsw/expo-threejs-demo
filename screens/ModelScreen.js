@@ -18,7 +18,7 @@ import HDRI from '../components/HDRI';
 
 const cameraProps = { position: [0, 0, 5], fov: 50 }
 
-export default function ModelScreen() {
+export default function ModelScreen({ modelPath }) {
   const [animationNames, setAnimationNames] = useState([]);
   const [index, setIndex] = useState(-1);
   const [loop, setLoop] = useState(false);
@@ -39,7 +39,7 @@ export default function ModelScreen() {
   // '../assets/models/Sapo 1.glb' - 
   // '../assets/models/CubeLight3.glb' - 
   // '../assets/models/TesteLuz 2.glb' - 
-  const modelPath = '../assets/models/SapoTake0012.glb';
+  // const modelPath = '../assets/models/SapoTake0012.glb';
 
   function onAnimationNamesHandler(names) {
     setAnimationNames(names);
@@ -160,8 +160,8 @@ export default function ModelScreen() {
             /> */}
 
             {/* <HDRI setEnvironmentIntensity={setEnvironmentIntensity} /> */}
-            <Light position={[5, 8, 5]} intensity={1} />
-            <Light position={[-5, 8, -5]} intensity={1} />
+            {/* <Light position={[5, 8, 5]} intensity={1} />
+            <Light position={[-5, 8, -5]} intensity={1} /> */}
             {/* <directionalLight
               position={[5, 8, 5]}
               intensity={1}
@@ -249,7 +249,7 @@ export default function ModelScreen() {
               </mesh> */}
             </Suspense>
 
-            {/* <Environment preset="apartment" background={false} environmentIntensity={0.5} /> */}
+            <Environment preset="apartment" background={false} environmentIntensity={0.5} />
             {/* <Environment
               files={require('./assets/white_home_studio_2k.hdr')}
               background={false}

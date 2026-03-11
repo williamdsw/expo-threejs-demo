@@ -1,27 +1,117 @@
 import { Center, useAnimations, useGLTF } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
-import { useEffect } from 'react';
+import { Asset } from 'expo-asset';
+import { useEffect, useRef, useState } from 'react';
+import { GLTFLoader } from 'three-stdlib';
+import { File, Directory, Paths } from 'expo-file-system';
 
 export default function Model({ modelPath, index, onAnimationNames, loop, freezeTpose, onBlenderCamera, setIsPlaying, setCurrentFPS }) {
-  console.log({ modelPath })
+  const [uri, setUri] = useState(null);
+  // const [model, setModel] = useState(null);
+
+  useEffect(() => {
+    console.log('useEffect')
+    async function load() {
+      // console.log('cache:', Paths.cache)
+      // console.log('document:', Paths.document)
+      // console.log('bundle:', Paths.bundle)
+      // console.log('load')
+      // const asset = Asset.fromModule(require('../assets/models/CubeLight.glb'));
+      // await asset.downloadAsync()
+      // const local = asset.localUri ?? asset.uri
+      // setUri(local)
+
+      // const path = uri.substring(0, uri.lastIndexOf('/') + 1)
+      // const file = uri.substring(uri.lastIndexOf('/') + 1)
+      // console.log({ path, file })
+
+      // const loader = new GLTFLoader()
+      // loader.setPath(path)
+
+      // console.log('loader', path)
+
+      // loader.load(uri, (gltf) => {
+      //   console.log('MODEL:', { gltf })
+      // }, (progress) => {
+      //   console.log('PROGRESS:', progress.loaded)
+      // }, (error) => {
+      //   console.log('ERROR:', error)
+      // })
+
+      // const gltf = await loader.loadAsync(asset.uri)
+      // console.log({ gltf })
+
+      // setModel(gltf);
+
+      // const file = new FileSystem.File(uri)
+
+      // const buffer = await file.arrayBuffer()
+
+      // console.log("buffer length:", buffer.byteLength)
+
+      // const loader = new GLTFLoader()
+
+      // const teste = await loader.parseAsync(buffer);
+      // setModel(teste);
+
+      // loader.parse(
+      //   buffer,
+      //   "",
+      //   (gltf) => {
+      //     console.log("MODEL LOADED", gltf)
+      //   },
+      //   (error) => {
+      //     console.error("GLTF ERROR", error)
+      //   }
+      // )
+    }
+
+    load();
+
+
+  }, []);
+
+
+
+
+  // if (!uri) return null;
+
+  // const model = useGLTF(uri);
+
+
+
+  // async function logAssetPath() {
+  //   const asset = Asset.fromModule(require('../assets/models/SapoTake0012.glb'));
+  //   await asset.downloadAsync();
+  //   console.log(asset.localUri || asset.uri);
+  // }
+
+  // logAssetPath();
+
   // const { scene, animations, cameras } = useGLTF(require('../assets/models/SapoTake0012.glb'));
   // const { scene, animations, cameras } = useGLTF(require('../assets/models/testeHDRI.glb'));
   // const { scene, animations, cameras } = useGLTF(require('../assets/models/TesteMaterialNovo.glb'));
-  const { scene, animations, cameras } = useGLTF(require('../assets/models/SapoTake001 3.glb'));
+  // const { scene, animations, cameras } = useGLTF(require('../assets/models/SapoTake001 3.glb'));
+  // const { scene, animations, cameras } = useGLTF('file:///data/user/0/host.exp.exponent/files/SapoTake001.glb');
+  const { scene, animations, cameras } = useGLTF(modelPath);
+  // console.log('uri: 2', { uri })
+  // if (!uri) return null;
+
+  // const { scene, animations, cameras } = model;
   const { actions, names, mixer } = useAnimations(animations, scene);
   const { set, size } = useThree();
 
-  let frames = 0
-  let lastTime = performance.now()
+  const frames = useRef(0)
+  const lastTime = useRef(performance.now())
 
   useFrame(() => {
-    frames++
+    frames.current++
     const now = performance.now()
 
-    if (now - lastTime >= 1000) {
-      setCurrentFPS(frames)
-      frames = 0
-      lastTime = now
+    if (now - lastTime.current >= 1000) {
+      setCurrentFPS(frames.current)
+      frames.current = 0
+      lastTime.current = now
     }
   })
 
